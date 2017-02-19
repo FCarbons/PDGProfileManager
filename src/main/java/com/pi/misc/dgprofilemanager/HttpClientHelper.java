@@ -135,7 +135,78 @@ public class HttpClientHelper {
 				responseData += responseLine;
 			}
 
-			responseObject.responseCode = HttpsURLConnection.HTTP_OK;
+			responseObject.responseCode = responseCode;
+			responseObject.responseData = responseData;
+
+			httpsURLConnection.disconnect();
+
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (ProtocolException protoException) {
+			protoException.printStackTrace();
+		} catch (IOException ioException) {
+			ioException.printStackTrace();
+		}
+
+		return responseObject;
+	}
+	
+	
+	
+	public static HttpClientResponse doPut(String getUrl, String authorizationHeader, String putBody) {
+
+		System.out.println("Creating PUT request to: " + getUrl);
+		HttpClientResponse responseObject = new HttpClientResponse();
+
+		// TODO: DEV ONLY! Remove before deploying in production
+		trustAllHosts();
+
+		try {
+			URL url = new URL(getUrl);
+
+			URLConnection urlConnection = url.openConnection();
+			HttpsURLConnection httpsURLConnection = (HttpsURLConnection) urlConnection;
+
+			// TODO: DEV ONLY! Remove before deploying in production
+			httpsURLConnection.setHostnameVerifier(new HostnameVerifier() {
+				@Override
+				public boolean verify(String hostname, SSLSession session) {
+					return true;
+				}
+			});
+
+			httpsURLConnection.setRequestMethod("PUT");
+			httpsURLConnection.setDoOutput(true);
+			httpsURLConnection.setUseCaches(false);
+			httpsURLConnection.setRequestProperty("Authorization", authorizationHeader);
+			httpsURLConnection.connect();
+			
+			System.out.println("POSTing data: " + url + " " + putBody);
+
+			DataOutputStream postData = new DataOutputStream(httpsURLConnection.getOutputStream());
+			postData.writeBytes(putBody);
+			postData.flush();
+			postData.close();
+			
+			int responseCode = httpsURLConnection.getResponseCode();
+			BufferedReader responseReader;
+
+			System.out.println("Got response code: " + responseCode);
+
+			if (httpsURLConnection.getErrorStream() != null) {
+				responseReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getErrorStream(), "UTF-8"));
+			} else {
+				responseReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream(), "UTF-8"));
+			}
+
+			String responseLine = null;
+			String responseData = "";
+
+			while ((responseLine = responseReader.readLine()) != null) {
+				responseData += responseLine;
+			}
+
+			responseObject.responseCode = responseCode;
 			responseObject.responseData = responseData;
 
 			httpsURLConnection.disconnect();

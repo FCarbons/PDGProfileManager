@@ -18,8 +18,8 @@ public class ProtocolHelper {
 		return authorizationUrl;
 	}
 
-	public static String getAccessToken(String tokenEndPoint, String code, String clientId, String clientSecret, String redirectUri) throws UnsupportedEncodingException,
-			MalformedURLException, JSONException {
+	public static String getAccessToken(String tokenEndPoint, String code, String clientId, String clientSecret, String redirectUri)
+			throws UnsupportedEncodingException, MalformedURLException, JSONException {
 
 		String tokenUrl = tokenEndPoint;
 		String tokenRequest = "client_id=" + clientId;
@@ -29,7 +29,6 @@ public class ProtocolHelper {
 		tokenRequest += "&redirect_uri=" + urlEncodeParameter(redirectUri);
 
 		HttpClientResponse httpResponse = HttpClientHelper.doPost(tokenUrl, tokenRequest);
-		System.out.println("Call compldted with code  " + httpResponse.responseCode);
 
 		if (httpResponse.responseCode == 200) {
 			JSONObject jsonResponse = new JSONObject(httpResponse.responseData);
@@ -37,6 +36,26 @@ public class ProtocolHelper {
 				System.out.println("Returning access token  " + jsonResponse.getString("access_token"));
 				return jsonResponse.getString("access_token");
 			}
+		}
+		return null;
+	}
+
+	public static JSONObject getUser(String userEndPoint, String accessToken) throws JSONException  {
+		HttpClientResponse httpResponse = HttpClientHelper.doGet(userEndPoint, "Bearer " + accessToken);
+
+		if (httpResponse.responseCode == 200) {
+			JSONObject jsonResponse = new JSONObject(httpResponse.responseData);
+			return jsonResponse;
+		}
+		return null;
+	}
+	
+	public static JSONObject modifyUser(String userEndPoint, String accessToken, JSONObject modifiedUser) throws JSONException  {
+		HttpClientResponse httpResponse = HttpClientHelper.doPut(userEndPoint, "Bearer " + accessToken, modifiedUser.toString());
+
+		if (httpResponse.responseCode == 200) {
+			JSONObject jsonResponse = new JSONObject(httpResponse.responseData);
+			return jsonResponse;
 		}
 		return null;
 	}
