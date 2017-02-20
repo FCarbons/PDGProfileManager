@@ -53,9 +53,9 @@ public class UserName {
 	
 	public JSONObject returnJsonObject () throws JSONException {
 		JSONObject nameObject = new JSONObject();
-		nameObject.put("formatted", "test");
-		nameObject.put("familyName", "fede");
-		nameObject.put("givenName", "ciao");
+		nameObject.put("formatted", getFormatted());
+		nameObject.put("familyName", getFamilyName());
+		nameObject.put("givenName", getGivenName());
 		return nameObject;
 	}
 

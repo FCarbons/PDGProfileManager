@@ -1,7 +1,9 @@
 package com.pi.misc.dgprofilemanager;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URLEncoder;
 
 import org.json.JSONException;
@@ -19,7 +21,7 @@ public class ProtocolHelper {
 	}
 
 	public static String getAccessToken(String tokenEndPoint, String code, String clientId, String clientSecret, String redirectUri)
-			throws UnsupportedEncodingException, MalformedURLException, JSONException {
+			throws JSONException, ProtocolException, IOException {
 
 		String tokenUrl = tokenEndPoint;
 		String tokenRequest = "client_id=" + clientId;
@@ -40,7 +42,7 @@ public class ProtocolHelper {
 		return null;
 	}
 
-	public static JSONObject getUser(String userEndPoint, String accessToken) throws JSONException  {
+	public static JSONObject getUser(String userEndPoint, String accessToken) throws JSONException, MalformedURLException, ProtocolException, IOException  {
 		HttpClientResponse httpResponse = HttpClientHelper.doGet(userEndPoint, "Bearer " + accessToken);
 
 		if (httpResponse.responseCode == 200) {
@@ -50,7 +52,7 @@ public class ProtocolHelper {
 		return null;
 	}
 	
-	public static JSONObject modifyUser(String userEndPoint, String accessToken, JSONObject modifiedUser) throws JSONException  {
+	public static JSONObject modifyUser(String userEndPoint, String accessToken, JSONObject modifiedUser) throws JSONException, IOException  {
 		HttpClientResponse httpResponse = HttpClientHelper.doPut(userEndPoint, "Bearer " + accessToken, modifiedUser.toString());
 
 		if (httpResponse.responseCode == 200) {

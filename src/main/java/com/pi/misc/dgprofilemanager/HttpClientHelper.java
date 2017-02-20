@@ -7,7 +7,6 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
@@ -18,208 +17,152 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.springframework.util.StringUtils;
+
 public class HttpClientHelper {
 
-	public static HttpClientResponse doPost(String postUrl, String postBody) {
+	public static HttpClientResponse doPost(String url, String postBody) throws MalformedURLException, ProtocolException, IOException {
 
 		HttpClientResponse responseObject = new HttpClientResponse();
 
-		// TODO: DEV ONLY! Remove before deploying in production
-		trustAllHosts();
+		HttpsURLConnection httpsURLConnection = getConnectionForMethod(url, "POST", null);
+		httpsURLConnection.connect();
+		System.out.println("POSTing data: " + url + " " + postBody);
+		DataOutputStream postData = new DataOutputStream(httpsURLConnection.getOutputStream());
+		postData.writeBytes(postBody);
+		postData.flush();
+		postData.close();
 
-		try {
-			URL url = new URL(postUrl);
+		int responseCode = httpsURLConnection.getResponseCode();
+		BufferedReader responseReader = getResponseReader(httpsURLConnection);
 
-			URLConnection urlConnection = url.openConnection();
-			HttpsURLConnection httpsURLConnection = (HttpsURLConnection) urlConnection;
+		System.out.println("Got response code: " + responseCode);
 
-			// TODO: DEV ONLY! Remove before deploying in production
-			httpsURLConnection.setHostnameVerifier(new HostnameVerifier() {
-				@Override
-				public boolean verify(String hostname, SSLSession session) {
-					return true;
-				}
-			});
+		String responseLine = null;
+		String responseData = "";
 
-			httpsURLConnection.setRequestMethod("POST");
-			httpsURLConnection.setDoInput(true);
-			httpsURLConnection.setDoOutput(true);
-			httpsURLConnection.setUseCaches(false);
-			httpsURLConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-			httpsURLConnection.connect();
-
-			System.out.println("POSTing data: " + postUrl + " " + postBody);
-
-			DataOutputStream postData = new DataOutputStream(httpsURLConnection.getOutputStream());
-			postData.writeBytes(postBody);
-			postData.flush();
-			postData.close();
-
-			int responseCode = httpsURLConnection.getResponseCode();
-			BufferedReader responseReader;
-
-			System.out.println("Got response code: " + responseCode);
-
-			if (httpsURLConnection.getErrorStream() != null) {
-				responseReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getErrorStream(), "UTF-8"));
-			} else {
-				responseReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream(), "UTF-8"));
-			}
-
-			String responseLine = null;
-			String responseData = "";
-
-			while ((responseLine = responseReader.readLine()) != null) {
-				responseData += responseLine;
-			}
-
-			responseObject.responseCode = responseCode;
-			responseObject.responseData = responseData;
-
-			httpsURLConnection.disconnect();
-
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (ProtocolException protoException) {
-			protoException.printStackTrace();
-		} catch (IOException ioException) {
-			ioException.printStackTrace();
+		while ((responseLine = responseReader.readLine()) != null) {
+			responseData += responseLine;
 		}
+
+		responseObject.responseCode = responseCode;
+		responseObject.responseData = responseData;
+		httpsURLConnection.disconnect();
+		return responseObject;
+	}
+
+	public static HttpClientResponse doGet(String url, String authorizationHeader) throws MalformedURLException, ProtocolException, IOException {
+
+		System.out.println("Creating GET request to: " + url);
+		HttpClientResponse responseObject = new HttpClientResponse();
+
+		HttpsURLConnection httpsURLConnection = getConnectionForMethod(url, "GET", authorizationHeader);
+		httpsURLConnection.connect();
+
+		int responseCode = httpsURLConnection.getResponseCode();
+		BufferedReader responseReader = getResponseReader (httpsURLConnection);
+
+		System.out.println("Got response code: " + responseCode);
+	
+		String responseLine = null;
+		String responseData = "";
+
+		while ((responseLine = responseReader.readLine()) != null) {
+			responseData += responseLine;
+		}
+
+		responseObject.responseCode = responseCode;
+		responseObject.responseData = responseData;
+
+		httpsURLConnection.disconnect();
 
 		return responseObject;
 	}
 
-	public static HttpClientResponse doGet(String getUrl, String authorizationHeader) {
+	
+	public static HttpClientResponse doPut(String url, String authorizationHeader, String putBody) throws IOException {
 
-		System.out.println("Creating GET request to: " + getUrl);
+		System.out.println("Creating PUT request to: " + url);
 		HttpClientResponse responseObject = new HttpClientResponse();
 
-		// TODO: DEV ONLY! Remove before deploying in production
 		trustAllHosts();
 
-		try {
-			URL url = new URL(getUrl);
+		HttpsURLConnection httpsURLConnection = getConnectionForMethod(url, "PUT", authorizationHeader);
+		httpsURLConnection.connect();
+		System.out.println("POSTing data: " + url + " " + putBody);
 
-			URLConnection urlConnection = url.openConnection();
-			HttpsURLConnection httpsURLConnection = (HttpsURLConnection) urlConnection;
+		DataOutputStream postData = new DataOutputStream(httpsURLConnection.getOutputStream());
+		postData.writeBytes(putBody);
+		postData.flush();
+		postData.close();
 
-			// TODO: DEV ONLY! Remove before deploying in production
-			httpsURLConnection.setHostnameVerifier(new HostnameVerifier() {
-				@Override
-				public boolean verify(String hostname, SSLSession session) {
-					return true;
-				}
-			});
+		int responseCode = httpsURLConnection.getResponseCode();
+		BufferedReader responseReader = getResponseReader(httpsURLConnection);
 
-			httpsURLConnection.setRequestMethod("GET");
-			httpsURLConnection.setDoOutput(true);
-			httpsURLConnection.setUseCaches(false);
-			httpsURLConnection.setRequestProperty("Authorization", authorizationHeader);
-			httpsURLConnection.connect();
+		System.out.println("Got response code: " + responseCode);
 
-			int responseCode = httpsURLConnection.getResponseCode();
-			BufferedReader responseReader;
+		String responseLine = null;
+		String responseData = "";
 
-			System.out.println("Got response code: " + responseCode);
-
-			if (httpsURLConnection.getErrorStream() != null) {
-				responseReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getErrorStream(), "UTF-8"));
-			} else {
-				responseReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream(), "UTF-8"));
-			}
-
-			String responseLine = null;
-			String responseData = "";
-
-			while ((responseLine = responseReader.readLine()) != null) {
-				responseData += responseLine;
-			}
-
-			responseObject.responseCode = responseCode;
-			responseObject.responseData = responseData;
-
-			httpsURLConnection.disconnect();
-
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (ProtocolException protoException) {
-			protoException.printStackTrace();
-		} catch (IOException ioException) {
-			ioException.printStackTrace();
+		while ((responseLine = responseReader.readLine()) != null) {
+			responseData += responseLine;
 		}
+
+		responseObject.responseCode = responseCode;
+		responseObject.responseData = responseData;
+
+		httpsURLConnection.disconnect();
 
 		return responseObject;
 	}
+
 	
-	
-	
-	public static HttpClientResponse doPut(String getUrl, String authorizationHeader, String putBody) {
-
-		System.out.println("Creating PUT request to: " + getUrl);
-		HttpClientResponse responseObject = new HttpClientResponse();
-
-		// TODO: DEV ONLY! Remove before deploying in production
-		trustAllHosts();
-
-		try {
-			URL url = new URL(getUrl);
-
-			URLConnection urlConnection = url.openConnection();
-			HttpsURLConnection httpsURLConnection = (HttpsURLConnection) urlConnection;
-
-			// TODO: DEV ONLY! Remove before deploying in production
-			httpsURLConnection.setHostnameVerifier(new HostnameVerifier() {
-				@Override
-				public boolean verify(String hostname, SSLSession session) {
-					return true;
-				}
-			});
-
-			httpsURLConnection.setRequestMethod("PUT");
-			httpsURLConnection.setDoOutput(true);
-			httpsURLConnection.setUseCaches(false);
-			httpsURLConnection.setRequestProperty("Authorization", authorizationHeader);
-			httpsURLConnection.connect();
-			
-			System.out.println("POSTing data: " + url + " " + putBody);
-
-			DataOutputStream postData = new DataOutputStream(httpsURLConnection.getOutputStream());
-			postData.writeBytes(putBody);
-			postData.flush();
-			postData.close();
-			
-			int responseCode = httpsURLConnection.getResponseCode();
-			BufferedReader responseReader;
-
-			System.out.println("Got response code: " + responseCode);
-
-			if (httpsURLConnection.getErrorStream() != null) {
-				responseReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getErrorStream(), "UTF-8"));
-			} else {
-				responseReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream(), "UTF-8"));
-			}
-
-			String responseLine = null;
-			String responseData = "";
-
-			while ((responseLine = responseReader.readLine()) != null) {
-				responseData += responseLine;
-			}
-
-			responseObject.responseCode = responseCode;
-			responseObject.responseData = responseData;
-
-			httpsURLConnection.disconnect();
-
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (ProtocolException protoException) {
-			protoException.printStackTrace();
-		} catch (IOException ioException) {
-			ioException.printStackTrace();
+	private static BufferedReader getResponseReader(HttpsURLConnection httpsURLConnection) throws IOException {
+		if (httpsURLConnection.getErrorStream() != null) {
+			return new BufferedReader(new InputStreamReader(httpsURLConnection.getErrorStream(), "UTF-8"));
+		} else {
+			return new  BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream(), "UTF-8"));
 		}
 
-		return responseObject;
+	}
+
+	
+	private static HttpsURLConnection getConnectionForMethod(String postUrl, String method, String authorizationHeader) throws MalformedURLException,
+			IOException, ProtocolException {
+		trustAllHosts();
+		URL url = new URL(postUrl);
+
+		HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
+
+		// TODO: DEV ONLY! Remove before deploying in production
+		httpsURLConnection.setHostnameVerifier(new HostnameVerifier() {
+			@Override
+			public boolean verify(String hostname, SSLSession session) {
+				return true;
+			}
+		});
+
+		httpsURLConnection.setRequestMethod(method);
+		httpsURLConnection.setUseCaches(false);
+		httpsURLConnection.setDoInput(true);
+
+		if (isOutputEnabled(method)) {
+			httpsURLConnection.setDoOutput(true);
+		}
+
+		if (!StringUtils.isEmpty(authorizationHeader)) {
+			httpsURLConnection.setRequestProperty("Authorization", authorizationHeader);
+		}
+
+		return httpsURLConnection;
+	}
+
+	private static boolean isOutputEnabled(String method) {
+		if (method.equalsIgnoreCase("POST") || method.equalsIgnoreCase("PUT"))
+			return true;
+		else
+			return false;
+
 	}
 
 	// TODO: DEV ONLY! Remove before deploying in production
@@ -247,5 +190,5 @@ public class HttpClientHelper {
 			e.printStackTrace();
 		}
 	}
-	
+
 }

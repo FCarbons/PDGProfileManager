@@ -1,15 +1,40 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org">
-<head> 
-    <title>Getting Started: Serving Web Content</title> 
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<head>
+<title>Getting Started: Serving Web Content</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link href="css/bootstrap.min.css" rel="stylesheet" />
 </head>
 <body>
-  <h1>Form</h1>
-    <form action="#" th:action="@{/profile}" th:object="${userName}" method="post">
-    	<p>First name: <input type="text" th:field="*{firstName}" /></p>
-        <p>Family name: <input type="text" th:field="*{familyName}" /></p>
-        <p><input type="submit" value="Submit" /> <input type="reset" value="Reset" /></p>
-    </form>
+	<div class="container">
+		<br /> <br /> 
+		<div class="jumbotron">
+			<h3>Profile update</h3>
+			<br />
+			<p th:text="*{resultMessage}" />
+			<form action="#" th:action="@{/profile}" th:object="${userName}"
+				method="post">
+				<div class="form-group">
+					<label for="firstName">First name</label> <input type="text"
+						th:field="*{givenName}" class="form-control" id="firstName" />
+
+				</div>
+
+				<div class="form-group">
+					<label for="familyName">Family name</label> <input type="text"
+						th:field="*{familyName}" class="form-control" id="familyName" />
+				</div>
+
+				<div class="form-group">
+					<label for="formatted">Full name</label> <input type="text"
+						th:field="*{formatted}" class="form-control" id="formatted" />
+				</div>
+				<br />
+				
+				<input class="btn btn-default" type="submit" value="Submit" />
+			</form>
+		</div>
+	</div>
 </body>
+
 </html>
